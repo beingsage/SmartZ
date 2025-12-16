@@ -1,8 +1,10 @@
 "use client"
 
 import { useEffect } from "react"
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from "react-native"
-import { useOrderStore } from "../store/order.store"
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, Alert, Linking } from "react-native"
+import { paymentApi } from "../services/api"
+import api from "../services/api"
+import { useOrderStore } from "../../../expo/src/store/order.store"
 import socketService from "../services/socket"
 
 const statusSteps = {
@@ -13,7 +15,7 @@ const statusSteps = {
   COMPLETED: { label: "Completed", icon: "🎉", step: 5 },
 }
 
-export default function OrderStatusScreen({ route }: any) {
+export default function OrderStatusScreen({ route, navigation }: any) {
   const { orderId } = route.params
   const { currentOrder, fetchOrder, updateOrderStatus } = useOrderStore()
 
@@ -51,6 +53,9 @@ export default function OrderStatusScreen({ route }: any) {
 
   return (
     <ScrollView style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("Home")}>
+        <Text style={styles.backText}>← Home</Text>
+      </TouchableOpacity>
       <View style={styles.header}>
         <Text style={styles.orderId}>Order #{currentOrder.id.slice(-6)}</Text>
         <Text style={styles.status}>{statusSteps[currentOrder.status as keyof typeof statusSteps]?.label}</Text>
@@ -87,7 +92,73 @@ export default function OrderStatusScreen({ route }: any) {
           <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalAmount}>₹{currentOrder.totalAmount}</Text>
         </View>
+        <View style={styles.actionsRow}>
+          {/* Payment status and retry */}
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <Text style={{ fontWeight: "700" }}>Payment: </Text>
+            <Text style={{ color: currentOrder.paymentStatus === "PAID" ? "#10b981" : currentOrder.paymentStatus === "FAILED" ? "#ef4444" : "#6b7280", fontWeight: "700" }}>{currentOrder.paymentStatus}</Text>
+          </View>
+
+          {currentOrder.paymentStatus === "FAILED" && (
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={async () => {
+                try {
+                  const session = await paymentApi.createCheckoutSession({ orderId: currentOrder.id, amount: currentOrder.totalAmount })
+                  if (session?.url) {
+                    Linking.openURL(session.url)
+                  }
+                } catch (err: any) {
+                  Alert.alert("Error", err.response?.data?.message || "Failed to start payment")
+                }
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700" }}>Retry Payment</Text>
+            </TouchableOpacity>
+          )}
+
+          {currentOrder.qr && (
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={async () => {
+                try {
+                  const res = await api.post(`/orders/${currentOrder.id}/resend-qr`)
+                  Alert.alert("QR refreshed")
+                  await fetchOrder(currentOrder.id)
+                } catch (err: any) {
+                  Alert.alert("Error", err.response?.data?.message || "Failed to refresh QR")
+                }
+              }}
+            >
+              <Text style={{ color: "#111827", fontWeight: "700" }}>Refresh QR</Text>
+            </TouchableOpacity>
+          )}
+
+          {currentOrder.status === "PLACED" && (
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={async () => {
+                try {
+                  await api.post(`/orders/${currentOrder.id}/cancel`)
+                  Alert.alert("Cancelled", "Order cancelled successfully")
+                  await fetchOrder(currentOrder.id)
+                } catch (err: any) {
+                  Alert.alert("Error", err.response?.data?.message || "Failed to cancel order")
+                }
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700" }}>Cancel Order</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
+
+      {currentOrder.qr && (
+        <View style={styles.qrCard}>
+          <Text style={styles.qrLabel}>Show this QR at pickup</Text>
+          <Image source={{ uri: currentOrder.qr }} style={styles.qrImage} />
+        </View>
+      )}
 
       {currentOrder.estimatedReadyTime && (
         <View style={styles.estimateCard}>
@@ -238,4 +309,32 @@ const styles = StyleSheet.create({
     color: "#3b82f6",
     marginTop: 4,
   },
+  qrCard: {
+    backgroundColor: "#fff",
+    margin: 16,
+    padding: 20,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  qrLabel: {
+    fontSize: 14,
+    color: "#6b7280",
+    marginBottom: 12,
+  },
+  qrImage: {
+    width: 200,
+    height: 200,
+  },
+  backButton: {
+    padding: 12,
+    margin: 16,
+  },
+  backText: {
+    color: "#111827",
+    fontWeight: "600",
+  },
+  actionsRow: { marginHorizontal: 16, flexDirection: "row", gap: 12, alignItems: "center", marginTop: 12 },
+  retryButton: { backgroundColor: "#f59e0b", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  secondaryButton: { backgroundColor: "#f3f4f6", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  cancelButton: { backgroundColor: "#ef4444", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
 })

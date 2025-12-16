@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native"
-import { useAuthStore } from "../store/auth.store"
+import { useAuthStore } from "../../../expo/src/store/auth.store"
 
 export default function LoginScreen({ navigation }: any) {
   useEffect(() => {

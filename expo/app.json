@@ -1,15 +1,20 @@
 {
   "expo": {
-    "name": "SmartQ Customer",
-    "slug": "smartq-customer",
+    "name": "Smartz",
+    "slug": "smartz-expo",
     "version": "1.0.0",
+
+    "sdkVersion": "48.0.0",
+    "platforms": ["ios", "android", "web"],
+
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/favicon.png",
     "userInterfaceStyle": "light",
+
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/favicon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#3b82f6"
+      "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
@@ -17,7 +22,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/favicon.png",
         "backgroundColor": "#3b82f6"
       },
       "package": "com.smartq.customer"
@@ -29,10 +34,11 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
+          "icon": "./assets/favicon.png",
           "color": "#3b82f6"
         }
       ]
-    ]
+    ],
+    "assetBundlePatterns": ["**/*"]
   }
 }

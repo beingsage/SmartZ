@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView } from "react-native"
-import { useAuthStore } from "../store/auth.store"
+import { useAuthStore } from "../../../expo/src/store/auth.store"
 
 export default function RegisterScreen({ navigation }: any) {
   const [name, setName] = useState("")

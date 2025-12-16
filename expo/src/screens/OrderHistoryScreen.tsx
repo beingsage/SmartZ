@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect } from "react"
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native"
-import { useOrderStore } from "../store/order.store"
-import type { Order } from "../types"
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Linking, Alert } from "react-native"
+import { paymentApi } from "../services/api"
+import { useOrderStore } from "../../../expo/src/store/order.store"
+import type { Order } from "../../../expo/src/types"
 
 export default function OrderHistoryScreen({ navigation }: any) {
   const { orders, fetchMyOrders, isLoading } = useOrderStore()
@@ -20,7 +21,10 @@ export default function OrderHistoryScreen({ navigation }: any) {
     <TouchableOpacity style={styles.orderCard} onPress={() => navigation.navigate("OrderStatus", { orderId: item.id })}>
       <View style={styles.orderHeader}>
         <Text style={styles.orderId}>Order #{item.id.slice(-6)}</Text>
-        <Text style={[styles.status, getStatusStyle(item.status)]}>{item.status}</Text>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={[styles.status, getStatusStyle(item.status)]}>{item.status}</Text>
+          <Text style={[styles.paymentBadge, item.paymentStatus === 'FAILED' ? styles.paymentFailed : styles.paymentOk]}>{item.paymentStatus}</Text>
+        </View>
       </View>
 
       <View style={styles.orderDetails}>
@@ -30,7 +34,28 @@ export default function OrderHistoryScreen({ navigation }: any) {
 
       <View style={styles.orderFooter}>
         <Text style={styles.amount}>₹{item.totalAmount}</Text>
-        <Text style={styles.viewDetails}>View Details →</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {item.paymentStatus === 'FAILED' && (
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={async () => {
+                try {
+                  const session = await paymentApi.createCheckoutSession({ orderId: item.id, amount: item.totalAmount })
+                  if (session?.url) {
+                    Linking.openURL(session.url)
+                  } else {
+                    Alert.alert('Error', 'Could not create payment session')
+                  }
+                } catch (err: any) {
+                  Alert.alert('Error', err.response?.data?.message || 'Failed to retry payment')
+                }
+              }}
+            >
+              <Text style={styles.retryText}>Retry Payment</Text>
+            </TouchableOpacity>
+          )}
+          <Text style={[styles.viewDetails, { marginLeft: 12 }]}>View Details →</Text>
+        </View>
       </View>
     </TouchableOpacity>
   )
@@ -72,7 +97,11 @@ export default function OrderHistoryScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <FlatList
-        data={orders}
+        data={[...orders].sort((a, b) => {
+          if (a.paymentStatus === "FAILED" && b.paymentStatus !== "FAILED") return -1
+          if (b.paymentStatus === "FAILED" && a.paymentStatus !== "FAILED") return 1
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })}
         renderItem={renderOrder}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
@@ -165,6 +194,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fee2e2",
     color: "#ef4444",
   },
+  paymentBadge: { fontSize: 12, fontWeight: '700', marginTop: 4 },
+  paymentOk: { color: '#10b981' },
+  paymentFailed: { color: '#ef4444' },
+  retryButton: { backgroundColor: '#f59e0b', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  retryText: { color: '#fff', fontWeight: '700' },
   orderDetails: {
     flexDirection: "row",
     justifyContent: "space-between",

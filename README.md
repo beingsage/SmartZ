@@ -162,6 +162,12 @@ GET    /api/orders/:id          - Get order details
 GET    /api/orders/my           - Get user's orders
 
 POST   /api/payments/process    - Process payment
+POST   /api/payments/create-checkout-session - Create Stripe Checkout session (authenticated)
+POST   /api/payments/confirm    - Confirm a checkout session
+POST   /api/payments/webhook    - Stripe webhook endpoint (raw body; configure STRIPE_WEBHOOK_SECRET)
+
+POST   /api/orders/:id/resend-qr - Regenerate QR for an order (authenticated)
+POST   /api/orders/:id/cancel    - Cancel an order (authenticated)
 
 GET    /api/health              - Health check
 \`\`\`
@@ -225,6 +231,9 @@ Want to enhance the app? Here are some ideas:
 - Implement real payment gateway (Stripe/Razorpay)
 - Add admin dashboard for vendors
 - Implement order cancellation
+ - QR pickup verification (added): orders now generate a QR (PNG data URL) that customers can show at pickup. Workers can verify orders by POSTing to `/api/orders/verify` with `{ orderId, token }` — in development you may POST just `{ orderId }` for convenience.
+ - Payment simulation: backend provides a payment simulation used by the Checkout screen (95% success rate). Replace with a real gateway when ready.
+ - Stripe (optional): To enable real Stripe Checkout, set `STRIPE_SECRET_KEY` in the backend `.env` and `CLIENT_URL` (e.g., `http://localhost:19006`) so the server can create Checkout sessions and confirm payments via `POST /api/payments/create-checkout-session` and `/api/payments/confirm`.
 
 ## License
 

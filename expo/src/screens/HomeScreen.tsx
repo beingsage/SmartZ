@@ -1,4 +1,4 @@
-"use client"
+import React from 'react';
 
 import { useEffect, useState } from "react"
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native"
@@ -22,6 +22,11 @@ export default function HomeScreen({ navigation }: any) {
       setVendors(data)
     } catch (error) {
       console.error("Failed to load vendors:", error)
+      // If user is not authenticated, redirect to Login to prompt sign in
+      const status = (error as any)?.response?.status
+      if (status === 401) {
+        navigation.replace("Login")
+      }
     } finally {
       setIsLoading(false)
     }

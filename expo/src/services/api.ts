@@ -93,6 +93,14 @@ export const paymentApi = {
     const response = await api.post("/payments/process", data)
     return response.data
   },
+  createCheckoutSession: async (data: { orderId: string; amount: number }) => {
+    const response = await api.post("/payments/create-checkout-session", data)
+    return response.data
+  },
+  confirm: async (sessionId: string) => {
+    const response = await api.post("/payments/confirm", { sessionId })
+    return response.data
+  },
 }
 
 export default api

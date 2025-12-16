@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native"
-import { useAuthStore } from "../store/auth.store"
+import { useAuthStore } from "../../../expo/src/store/auth.store"
 import socketService from "../services/socket"
 
 export default function ProfileScreen({ navigation }: any) {
@@ -33,6 +33,11 @@ export default function ProfileScreen({ navigation }: any) {
       <View style={styles.menu}>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("OrderHistory")}>
           <Text style={styles.menuText}>📋 Order History</Text>
+          <Text style={styles.arrow}>→</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("VendorScan") }>
+          <Text style={styles.menuText}>🔍 Worker Scan</Text>
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
 

@@ -62,6 +62,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   loadUser: async () => {
     try {
+      set({ isLoading: true, error: null })
       const token = await AsyncStorage.getItem("token")
       if (token) {
         const user = await authApi.getProfile()
@@ -70,6 +71,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       await AsyncStorage.removeItem("token")
       set({ user: null, token: null })
+    } finally {
+      set({ isLoading: false })
     }
   },
 }))

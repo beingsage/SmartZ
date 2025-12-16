@@ -23,6 +23,7 @@ const io = new SocketServer(httpServer, {
 })
 
 app.use(cors())
+// Keep json parser globally, but webhook needs raw body for Stripe signature verification
 app.use(express.json())
 
 app.post("/api/auth/register", authController.register)
@@ -38,7 +39,22 @@ app.post("/api/orders", authenticate, orderController.createOrder)
 app.get("/api/orders/:id", authenticate, orderController.getOrderById)
 app.get("/api/orders/my", authenticate, orderController.getMyOrders)
 
+// Worker verification endpoint (e.g., scan QR and POST { orderId, token })
+app.post("/api/orders/verify", orderController.verifyOrder)
+app.post("/api/orders/:id/resend-qr", authenticate, orderController.resendQr)
+app.post("/api/orders/:id/cancel", authenticate, orderController.cancelOrder)
+
 app.post("/api/payments/process", authenticate, paymentController.processPayment)
+app.post("/api/payments/create-checkout-session", authenticate, paymentController.createCheckoutSession)
+app.post("/api/payments/confirm", paymentController.confirmPayment)
+
+// Stripe webhook endpoint (use express.raw to keep raw body for signature verification)
+app.post(
+  "/api/payments/webhook",
+  express.raw({ type: "application/json" }),
+  // @ts-ignore - handled as raw
+  paymentController.handleWebhook,
+)
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() })
@@ -61,5 +77,8 @@ httpServer.listen(PORT, () => {
   console.log(`📡 HTTP Server: http://localhost:${PORT}`)
   console.log(`🔌 WebSocket Server: ws://localhost:${PORT}`)
   console.log(`💾 Database: SQLite (smartq.db)`)
+  if (!process.env.STRIPE_SECRET_KEY) {
+    console.warn("⚠️  STRIPE_SECRET_KEY not configured - Stripe payments disabled or limited")
+  }
   console.log("\n✅ Ready to accept connections\n")
 })

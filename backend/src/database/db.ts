@@ -48,6 +48,7 @@ db.exec(`
     totalAmount REAL NOT NULL,
     status TEXT NOT NULL,
     paymentStatus TEXT NOT NULL,
+    verificationToken TEXT,
     createdAt TEXT NOT NULL,
     updatedAt TEXT NOT NULL,
     estimatedReadyTime TEXT,
@@ -55,6 +56,13 @@ db.exec(`
     FOREIGN KEY (vendorId) REFERENCES vendors(id)
   );
 `)
+
+// Add column for verification token for older DBs that may not have it
+try {
+  db.prepare("ALTER TABLE orders ADD COLUMN verificationToken TEXT").run()
+} catch (e) {
+  // ignore if column already exists
+}
 
 const vendorCount = db.prepare("SELECT COUNT(*) as count FROM vendors").get() as { count: number }
 

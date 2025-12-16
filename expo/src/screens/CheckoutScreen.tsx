@@ -2,14 +2,18 @@
 
 import { useState } from "react"
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView } from "react-native"
+import { Linking } from "react-native"
 import { useCartStore } from "../store/cart.store"
 import { useOrderStore } from "../store/order.store"
 import { paymentApi } from "../services/api"
 import socketService from "../services/socket"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export default function CheckoutScreen({ navigation }: any) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<"card" | "upi" | "cash">("card")
+  // add a back button in header
+  const goBack = () => navigation.goBack()
   const { items, vendorId, getTotalAmount, clearCart } = useCartStore()
   const { createOrder } = useOrderStore()
 
@@ -17,6 +21,18 @@ export default function CheckoutScreen({ navigation }: any) {
     setIsProcessing(true)
 
     try {
+      if (!vendorId || items.length === 0) {
+        Alert.alert("Cart empty", "Please add items to your cart before placing an order")
+        setIsProcessing(false)
+        return
+      }
+
+      const total = getTotalAmount()
+      if (!total || total <= 0) {
+        Alert.alert("Invalid total", "Order total must be greater than zero")
+        setIsProcessing(false)
+        return
+      }
       const orderData = {
         vendorId: vendorId!,
         items: items.map((item) => ({
@@ -28,9 +44,21 @@ export default function CheckoutScreen({ navigation }: any) {
 
       const order = await createOrder(orderData)
 
+      // Prefer Stripe Checkout for full E2E payment flow when STRIPE_SECRET_KEY is configured
+      try {
+        const json = await paymentApi.createCheckoutSession({ orderId: order.id, amount: order.totalAmount })
+
+        if (json.url) {
+          Linking.openURL(json.url)
+          return
+        }
+      } catch (err) {
+        console.warn("Stripe checkout not available, falling back to simulated payment", err)
+      }
+
       const paymentResult = await paymentApi.process({
         orderId: order.id,
-        amount: getTotalAmount(),
+        amount: order.totalAmount,
         paymentMethod,
       })
 
@@ -57,6 +85,9 @@ export default function CheckoutScreen({ navigation }: any) {
 
   return (
     <ScrollView style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={goBack}>
+        <Text style={styles.backText}>← Back</Text>
+      </TouchableOpacity>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Order Summary</Text>
         {items.map((item) => (
@@ -190,6 +221,14 @@ const styles = StyleSheet.create({
   placeOrderText: {
     color: "#fff",
     fontSize: 18,
+    fontWeight: "600",
+  },
+  backButton: {
+    padding: 12,
+    margin: 16,
+  },
+  backText: {
+    color: "#111827",
     fontWeight: "600",
   },
 })

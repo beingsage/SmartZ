@@ -42,6 +42,8 @@ export interface Order {
   totalAmount: number
   status: OrderStatus
   paymentStatus: "PENDING" | "PAID" | "FAILED"
+  verificationToken?: string | null
+  qr?: string | null
   createdAt: string
   updatedAt: string
   estimatedReadyTime: string | null

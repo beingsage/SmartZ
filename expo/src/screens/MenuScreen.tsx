@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react"
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native"
 import { menuApi } from "../services/api"
-import { useCartStore } from "../store/cart.store"
-import type { MenuItem } from "../types"
+import { useCartStore } from "../../../expo/src/store/cart.store"
+import type { MenuItem } from "../../../expo/src/types"
 
 export default function MenuScreen({ route, navigation }: any) {
   const { vendorId, vendorName } = route.params
